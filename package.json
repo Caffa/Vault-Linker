@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "vault-linker",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "This is a Vault Linker for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

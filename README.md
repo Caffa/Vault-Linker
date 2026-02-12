@@ -88,3 +88,7 @@ If you have multiple URLs, you can also do:
 ## API Documentation
 
 See https://docs.obsidian.md
+
+## ♥️ Support This Project
+
+If you find this little plugin useful, I'd truly appreciate your support. Please consider buying me a coffee on [Ko-fi](https://ko-fi.com/pamelawang_mwahacookie). Your contribution helps me keep making tools that make your creative life easier.
