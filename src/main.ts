@@ -125,7 +125,7 @@ export default class VaultLinkerPlugin extends Plugin {
 
     isRemoteMatch(href: string): boolean {
         let lookupName = href;
-        if (href.includes('#')) lookupName = href.split('#')[0];
+        if (href.includes('#')) lookupName = href.split('#')[0] || href;
         const targetFilename = this.normalizeFilename(path.basename(lookupName));
         return this.globalIndex.has(targetFilename);
     }
@@ -181,12 +181,14 @@ export default class VaultLinkerPlugin extends Plugin {
                  this.lastOpenTime = now;
 
                 const bestMatch = matches[0];
-                const vaultName = path.basename(bestMatch.vaultPath);
-                const encodedFile = encodeURIComponent(bestMatch.fileInfo.path);
-                const encodedVault = encodeURIComponent(vaultName);
+                if (bestMatch) {
+                    const vaultName = path.basename(bestMatch.vaultPath);
+                    const encodedFile = encodeURIComponent(bestMatch.fileInfo.path);
+                    const encodedVault = encodeURIComponent(vaultName);
 
-                const uri = `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
-                window.open(uri);
+                    const uri = `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
+                    window.open(uri);
+                }
             }
         }
     }
@@ -197,7 +199,7 @@ export default class VaultLinkerPlugin extends Plugin {
 
         let lookupName = src;
         if (src.includes('#')) {
-            lookupName = src.split('#')[0];
+            lookupName = src.split('#')[0] || src;
         }
 
         const targetFilename = this.normalizeFilename(lookupName);
@@ -205,6 +207,8 @@ export default class VaultLinkerPlugin extends Plugin {
 
         if (matches && matches.length > 0) {
             const match = matches[0];
+            if (!match) return; // Should not happen given length check but TS is strict
+
             const absolutePath = path.join(match.vaultPath, match.fileInfo.path);
 
             try {

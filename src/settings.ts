@@ -28,7 +28,7 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
         containerEl.createEl('h2', {text: 'Vault Linker Settings'});
 
 		new Setting(containerEl)
-			.setName('Neighbor Vaults')
+			.setName('Neighbor vaults')
 			.setDesc('Add absolute paths to other vaults (one per line).')
 			.addTextArea(text => text
 				.setPlaceholder('/path/to/VaultA\n/path/to/VaultB')
@@ -39,7 +39,7 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
 				}));
 
         new Setting(containerEl)
-            .setName('Link Color')
+            .setName('Link color')
             .setDesc('CSS color for cross-vault links (e.g., #00b894 or red).')
             .addText(text => text
                 .setValue(this.plugin.settings.linkTextColor)
@@ -49,7 +49,7 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Embed Background Color')
+            .setName('Embed background color')
             .setDesc('CSS color for cross-vault embed background.')
             .addText(text => text
                 .setValue(this.plugin.settings.embedBackgroundColor)
