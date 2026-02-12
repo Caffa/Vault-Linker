@@ -2,25 +2,25 @@
 npm version patch --no-git-tag-version
 
 # create the current_release directory if it does not exist
-mkdir -p copy-file-link-hotkey
+mkdir -p vault-linker
 
 # make a copy of the main.js, manifest.json, and styles.css files in another folder
-cp main.js copy-file-link-hotkey
-cp manifest.json copy-file-link-hotkey
-cp styles.css copy-file-link-hotkey
+cp main.js vault-linker
+cp manifest.json vault-linker
+cp styles.css vault-linker
 # compress the current_release folder into a zip file
 # zip -r release.zip current_release
 
 # send to my novel folder
-cp -r copy-file-link-hotkey /Users/caffae/Notes/Novel-Writing/.obsidian/plugins/
+cp -r vault-linker /Users/caffae/Notes/Novel-Writing/.obsidian/plugins/
 echo "Updated plugin in novel writing folder"
 
-zip -vr copy-file-link-hotkey.zip copy-file-link-hotkey -x "*.DS_Store"
+zip -vr vault-linker.zip vault-linker -x "*.DS_Store"
 
-mv copy-file-link-hotkey.zip release.zip
+mv vault-linker.zip release.zip
 
 # remove the current_release folder
-# rm -rf copy-file-link-hotkey
+# rm -rf vault-linker
 
 # Get the new version and create a tag without 'v' prefix
 VERSION=$(node -p "require('./package.json').version")

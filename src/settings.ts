@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: VaultLinkerSettings = {
     discoveredVaults: [],
     parentVaultFolder: '',
     linkTextColor: '#00b894',
-    embedBackgroundColor: 'rgba(106, 13, 173, 0.05)'
+    embedBackgroundColor: '#f5e6fa'
 }
 
 export class VaultLinkerSettingTab extends PluginSettingTab {
@@ -196,8 +196,8 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Link color')
-            .setDesc('CSS color for cross-vault links (e.g., #00b894 or red).')
-            .addText(text => text
+            .setDesc('Hex color for cross-vault links.')
+            .addColorPicker(picker => picker
                 .setValue(this.plugin.settings.linkTextColor)
                 .onChange(async (value) => {
                     this.plugin.settings.linkTextColor = value;
@@ -206,8 +206,8 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Embed background color')
-            .setDesc('CSS color for cross-vault embed background.')
-            .addText(text => text
+            .setDesc('Hex color for cross-vault embed background.')
+            .addColorPicker(picker => picker
                 .setValue(this.plugin.settings.embedBackgroundColor)
                 .onChange(async (value) => {
                     this.plugin.settings.embedBackgroundColor = value;

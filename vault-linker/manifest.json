@@ -1,0 +1,11 @@
+{
+	"id": "vault-linker",
+	"name": "Vault Linker",
+	"version": "1.0.1",
+	"minAppVersion": "1.7.7",
+	"description": "Connect multiple obsidian vaults together with links and embeds that work across vaults",
+	"author": "Pamela Wang",
+	"authorUrl": "https://github.com/Caffa",
+	"fundingUrl": "https://ko-fi.com/pamelawang_mwahacookie",
+	"isDesktopOnly": true
+}
