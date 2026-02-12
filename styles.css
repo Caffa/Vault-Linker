@@ -1,8 +1,18 @@
-/*
+/* Cross-Vault Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Reading Mode & Live Preview */
+.cross-vault-link {
+    color: var(--cross-vault-link-color, #00b894) !important;
+    text-decoration-style: dashed !important;
+}
 
-If your plugin does not need CSS, delete this file.
+.cross-vault-link::after {
+    content: " ↗";
+    font-size: 0.8em;
+}
 
-*/
+/* Embeds */
+.cross-vault-embed {
+    background-color: var(--cross-vault-embed-bg, rgba(106, 13, 173, 0.05));
+    border-radius: 4px;
+}
