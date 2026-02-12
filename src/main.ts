@@ -12,6 +12,10 @@ interface VaultIndex {
 	files: Record<string, FileInfo>;
 }
 
+// Helper to deduce the plugin directory name for cross-vault settings modification
+const PLUGIN_ID = "vault-linker"; // From manifest.json
+const FALLBACK_PLUGIN_DIR = "Vault-Linker"; // Observed from user path
+
 export default class VaultLinkerPlugin extends Plugin {
 	settings: VaultLinkerSettings;
 	globalIndex: Map<string, { vaultPath: string; fileInfo: FileInfo }[]> = new Map();
@@ -271,7 +275,12 @@ export default class VaultLinkerPlugin extends Plugin {
         this.globalIndex.clear();
 		for (const vaultPath of this.settings.neighborVaults) {
 			try {
-				const indexPath = path.join(vaultPath, '.obsidian', 'plugins', 'cross-vault-connect', 'index.json');
+                // Try standard ID first, then fallback
+				let indexPath = path.join(vaultPath, '.obsidian', 'plugins', PLUGIN_ID, 'index.json');
+                if (!fs.existsSync(indexPath)) {
+                    indexPath = path.join(vaultPath, '.obsidian', 'plugins', FALLBACK_PLUGIN_DIR, 'index.json');
+                }
+
 				if (fs.existsSync(indexPath)) {
 					const indexContent = fs.readFileSync(indexPath, 'utf-8');
 					const index = JSON.parse(indexContent) as VaultIndex;
@@ -296,9 +305,109 @@ export default class VaultLinkerPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
+
 	async saveSettings() {
 		await this.saveData(this.settings);
         this.applyStyles(); // Re-apply styles on save
         this.loadRemoteIndices();
 	}
+
+    // --- Vault Discovery & Linking Logic ---
+
+    async scanForVaults(parentPath: string): Promise<string[]> {
+        if (!fs.existsSync(parentPath)) return [];
+
+        try {
+            const subdirs = fs.readdirSync(parentPath, { withFileTypes: true });
+            const vaultPaths: string[] = [];
+
+            for (const dirent of subdirs) {
+                if (dirent.isDirectory()) {
+                    const fullPath = path.join(parentPath, dirent.name);
+                    try {
+                        if (this.isVault(fullPath)) {
+                            vaultPaths.push(fullPath);
+                        }
+                    } catch (err) {
+                        // Ignore individual folder errors (e.g. permission denied)
+                        console.debug(`Skipping scan of ${fullPath} due to error:`, err);
+                    }
+                }
+            }
+            return vaultPaths;
+        } catch (e: any) {
+            console.error(`Failed to scan parent folder: ${parentPath}`, e);
+            new Notice(`Error scanning folder: ${e.message}`);
+            return [];
+        }
+    }
+
+    isVault(dirPath: string): boolean {
+        const configPath = path.join(dirPath, '.obsidian');
+        try {
+            return fs.existsSync(configPath) && fs.statSync(configPath).isDirectory();
+        } catch {
+            return false;
+        }
+    }
+
+    async addNeighborVault(vaultPath: string) {
+        if (!this.settings.neighborVaults.includes(vaultPath)) {
+            this.settings.neighborVaults.push(vaultPath);
+            await this.saveSettings();
+        }
+        await this.ensureBidirectionalLink(vaultPath);
+    }
+
+    async ensureBidirectionalLink(remoteVaultPath: string) {
+        // Try to add THIS vault to the REMOTE vault's settings
+        const currentVaultPath = (this.app.vault.adapter as any).basePath;
+        if (!currentVaultPath) return;
+
+        // Determine where the remote plugin settings live
+        let remoteDataPath = path.join(remoteVaultPath, '.obsidian', 'plugins', PLUGIN_ID, 'data.json');
+        if (!fs.existsSync(path.dirname(remoteDataPath))) {
+             remoteDataPath = path.join(remoteVaultPath, '.obsidian', 'plugins', FALLBACK_PLUGIN_DIR, 'data.json');
+        }
+
+        if (fs.existsSync(remoteDataPath)) {
+            try {
+                const dataContent = fs.readFileSync(remoteDataPath, 'utf-8');
+                const data = JSON.parse(dataContent);
+
+                // Initialize if missing
+                if (!data.neighborVaults) data.neighborVaults = [];
+                if (!data.discoveredVaults) data.discoveredVaults = [];
+
+                let changed = false;
+
+                // 1. Suggest THIS vault
+                if (!data.neighborVaults.includes(currentVaultPath) && !data.discoveredVaults.includes(currentVaultPath)) {
+                    data.discoveredVaults.push(currentVaultPath);
+                    changed = true;
+                }
+
+                // 2. Gossip: Suggest my other neighbors to the remote vault
+                // "If possible, vault B should display the connections to all the other vaults that vault A has in its options too"
+                for (const neighbor of this.settings.neighborVaults) {
+                    if (neighbor === remoteVaultPath) continue; // Don't suggest B to B
+                    if (!data.neighborVaults.includes(neighbor) && !data.discoveredVaults.includes(neighbor)) {
+                        data.discoveredVaults.push(neighbor);
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    fs.writeFileSync(remoteDataPath, JSON.stringify(data, null, 2));
+                    new Notice(`Updated configuration in ${path.basename(remoteVaultPath)}`);
+                }
+            } catch (e) {
+                console.error(`Failed to update remote vault settings at ${remoteDataPath}`, e);
+            }
+        } else {
+            // Case where the remote vault doesn't have the plugin set up yet or different folder
+            // We can optionally try to create it, but that's risky. Stick to modifying existing data.
+            console.warn(`Remote vault ${remoteVaultPath} does not seem to have the plugin data.json`);
+        }
+    }
 }
