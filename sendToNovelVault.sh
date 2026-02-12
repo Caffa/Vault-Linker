@@ -14,6 +14,7 @@ cp styles.css copy-file-link-hotkey
 # send to my novel folder
 cp -r copy-file-link-hotkey /Users/caffae/Notes/Novel-Writing/.obsidian/plugins/
 cp -r copy-file-link-hotkey "/Users/caffae/Notes/ZettelPublish (Content Creator V2 April 2025)/.obsidian/plugins/"
-echo "Updated plugin in novel writing and zettelpublish folders"
+cp -r copy-file-link-hotkey "/Users/caffae/Notes/Journal/.obsidian/plugins/"
+echo "Updated plugin in novel writing and zettelpublish folders and journal folders"
 # echo "Updated plugin in zettelpublish folders"
 

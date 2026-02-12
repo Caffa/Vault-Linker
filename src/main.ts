@@ -14,7 +14,7 @@ interface VaultIndex {
 
 // Helper to deduce the plugin directory name for cross-vault settings modification
 const PLUGIN_ID = "vault-linker"; // From manifest.json
-const FALLBACK_PLUGIN_DIR = "Vault-Linker"; // Observed from user path
+
 
 export default class VaultLinkerPlugin extends Plugin {
 	settings: VaultLinkerSettings;
@@ -23,12 +23,30 @@ export default class VaultLinkerPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+
+        // 1. Set default parent folder if empty
+        if (!this.settings.parentVaultFolder) {
+            const adapter = this.app.vault.adapter;
+            if (adapter instanceof FileSystemAdapter) {
+                const basePath = adapter.getBasePath();
+                console.log("Vault Linker: Base path detected:", basePath);
+                if (basePath) {
+                    const parentDir = path.dirname(basePath);
+                    this.settings.parentVaultFolder = parentDir;
+                    console.log("Vault Linker: Setting default parent folder to:", parentDir);
+                    await this.saveSettings();
+                }
+            }
+        } else {
+            console.log("Vault Linker: Parent folder already set to:", this.settings.parentVaultFolder);
+        }
+
 		this.addSettingTab(new VaultLinkerSettingTab(this.app, this));
         this.applyStyles();
 
 		this.app.workspace.onLayoutReady(() => {
 			this.generateLocalIndex();
-			this.loadRemoteIndices();
+			this.loadRemoteIndices(); // No await here to not block layout ready, but it's async now
             this.registerDomEvents();
             this.initDomObserver();
 		});
@@ -271,18 +289,19 @@ export default class VaultLinkerPlugin extends Plugin {
         }
 	}
 
-	loadRemoteIndices() {
+	async loadRemoteIndices() {
         this.globalIndex.clear();
 		for (const vaultPath of this.settings.neighborVaults) {
 			try {
                 // Try standard ID first, then fallback
 				let indexPath = path.join(vaultPath, '.obsidian', 'plugins', PLUGIN_ID, 'index.json');
+
                 if (!fs.existsSync(indexPath)) {
-                    indexPath = path.join(vaultPath, '.obsidian', 'plugins', FALLBACK_PLUGIN_DIR, 'index.json');
+                    indexPath = path.join(vaultPath, '.obsidian', 'plugins', 'Vault-Linker', 'index.json');
                 }
 
 				if (fs.existsSync(indexPath)) {
-					const indexContent = fs.readFileSync(indexPath, 'utf-8');
+					const indexContent = await fs.promises.readFile(indexPath, 'utf-8');
 					const index = JSON.parse(indexContent) as VaultIndex;
 
                     for (const [filename, info] of Object.entries(index.files)) {
@@ -309,7 +328,7 @@ export default class VaultLinkerPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
         this.applyStyles(); // Re-apply styles on save
-        this.loadRemoteIndices();
+        await this.loadRemoteIndices();
 	}
 
     // --- Vault Discovery & Linking Logic ---
@@ -365,12 +384,40 @@ export default class VaultLinkerPlugin extends Plugin {
         if (!currentVaultPath) return;
 
         // Determine where the remote plugin settings live
-        let remoteDataPath = path.join(remoteVaultPath, '.obsidian', 'plugins', PLUGIN_ID, 'data.json');
-        if (!fs.existsSync(path.dirname(remoteDataPath))) {
-             remoteDataPath = path.join(remoteVaultPath, '.obsidian', 'plugins', FALLBACK_PLUGIN_DIR, 'data.json');
+        // Determine where the remote plugin settings live
+        // Robust strategy: Iterate over plugins in remote vault to find the one with id "vault-linker"
+        let remotePluginDir = null;
+        const remotePluginsPath = path.join(remoteVaultPath, '.obsidian', 'plugins');
+
+        if (fs.existsSync(remotePluginsPath)) {
+            const pluginDirs = fs.readdirSync(remotePluginsPath, { withFileTypes: true });
+            for (const dirent of pluginDirs) {
+                if (dirent.isDirectory()) {
+                    const manifestPath = path.join(remotePluginsPath, dirent.name, 'manifest.json');
+                    if (fs.existsSync(manifestPath)) {
+                         try {
+                             const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+                             if (manifest.id === PLUGIN_ID) {
+                                 remotePluginDir = dirent.name;
+                                 break;
+                             }
+                         } catch (e) {
+                             // Ignore invalid manifests
+                         }
+                    }
+                }
+            }
         }
 
-        if (fs.existsSync(remoteDataPath)) {
+        if (!remotePluginDir) {
+             // Fallback to standard names if scanning failed or folder not found (maybe not installed yet but folder exists?)
+            if (fs.existsSync(path.join(remoteVaultPath, '.obsidian', 'plugins', 'vault-linker'))) remotePluginDir = 'vault-linker';
+            else if (fs.existsSync(path.join(remoteVaultPath, '.obsidian', 'plugins', 'Vault-Linker'))) remotePluginDir = 'Vault-Linker';
+        }
+
+        const remoteDataPath = remotePluginDir ? path.join(remoteVaultPath, '.obsidian', 'plugins', remotePluginDir, 'data.json') : null;
+
+        if (remoteDataPath && fs.existsSync(remoteDataPath)) {
             try {
                 const dataContent = fs.readFileSync(remoteDataPath, 'utf-8');
                 const data = JSON.parse(dataContent);

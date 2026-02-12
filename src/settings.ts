@@ -30,8 +30,6 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
-        containerEl.createEl('h2', {text: 'Vault Linker Settings'});
-
 		containerEl.createEl('h2', {text: 'Vault Linker Settings'});
 
         this.addVaultDiscoverySection(containerEl);
@@ -45,33 +43,39 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('Parent folder for vaults')
             .setDesc('A folder containing other vaults you want to link to.')
-            .addText(text => text
-                .setPlaceholder('/Users/me/Notes')
-                .setValue(this.plugin.settings.parentVaultFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.parentVaultFolder = value;
-                    await this.plugin.saveSettings();
-                }))
+            .addText(text => {
+                const adapter = this.app.vault.adapter as any;
+                const defaultPath = adapter.basePath ? path.dirname(adapter.basePath) : '/Users/me/Notes';
+
+                // If setting is empty, show default as value (and distinct placeholder)
+                const currentValue = this.plugin.settings.parentVaultFolder;
+
+                text.setPlaceholder(defaultPath)
+                    .setValue(currentValue || defaultPath) // Pre-fill with default if empty
+                    .onChange(async (value) => {
+                        this.plugin.settings.parentVaultFolder = value;
+                        await this.plugin.saveSettings();
+                    });
+            })
             .addButton(btn => btn
                 .setButtonText('Browse')
-                .onClick(() => {
-                    // Hidden file input hack for folder selection
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.setAttribute('webkitdirectory', '');
-                    fileInput.style.display = 'none';
-                    document.body.appendChild(fileInput);
+                .onClick(async () => {
+                    try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const { remote } = require('electron');
+                        const result = await remote.dialog.showOpenDialog({
+                            properties: ['openDirectory']
+                        });
 
-                    fileInput.addEventListener('change', async () => {
-                        if (fileInput.files && fileInput.files.length > 0) {
-                            const pathStr = (fileInput.files[0] as any).path;
-                            this.plugin.settings.parentVaultFolder = pathStr;
+                        if (!result.canceled && result.filePaths.length > 0) {
+                            this.plugin.settings.parentVaultFolder = result.filePaths[0];
                             await this.plugin.saveSettings();
-                            this.display(); // Refresh to show new path and potentially scan
+                            this.display();
                         }
-                        document.body.removeChild(fileInput);
-                    });
-                    fileInput.click();
+                    } catch (e) {
+                        console.error("Vault Linker: Browse failed", e);
+                        new Notice("Browse failed. Please enter path manually.");
+                    }
                 }));
 
         // Scan Button
@@ -107,26 +111,27 @@ export class VaultLinkerSettingTab extends PluginSettingTab {
             .setDesc('Select a specific vault folder to add.')
             .addButton(btn => btn
                 .setButtonText('Browse & Add')
-                .onClick(() => {
-                     const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.setAttribute('webkitdirectory', '');
-                    fileInput.style.display = 'none';
-                    document.body.appendChild(fileInput);
+                .onClick(async () => {
+                     try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const { remote } = require('electron');
+                        const result = await remote.dialog.showOpenDialog({
+                            properties: ['openDirectory']
+                        });
 
-                    fileInput.addEventListener('change', async () => {
-                        if (fileInput.files && fileInput.files.length > 0) {
-                            const pathStr = (fileInput.files[0] as any).path;
+                        if (!result.canceled && result.filePaths.length > 0) {
+                            const pathStr = result.filePaths[0];
                             if (this.plugin.isVault(pathStr)) {
-                                await this.plugin.addNeighborVault(pathStr); // Helper checks duplication
+                                await this.plugin.addNeighborVault(pathStr);
                                 this.display();
                             } else {
                                 new Notice('Selected folder is not an Obsidian vault.');
                             }
                         }
-                        document.body.removeChild(fileInput);
-                    });
-                    fileInput.click();
+                    } catch (e) {
+                        console.error("Vault Linker: Browse failed", e);
+                        new Notice("Browse failed. Please enter path manually.");
+                    }
                 }));
 
 
