@@ -1,94 +1,146 @@
-# Obsidian Sample Plugin
+# Vault Linker
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+![showcase](media/showcase.gif)
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+Connect your Obsidian vaults together. Link to files and embed content from other vaults as if they were part of your current vault.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## What It Does
 
-## First time developing plugins?
+Vault Linker lets you work with multiple Obsidian vaults as a unified knowledge base. When you create a link to a note that exists in another connected vault:
 
-Quick starting guide for new plugin devs:
+- **Clicking the link** opens that file in the other vault
+- **Embedding the content** `![[filename]]` displays the remote note inline
+- **Cross-vault links** are styled distinctly (customizable colors)
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## Features
 
-## Releasing new releases
+- **Seamless Cross-Vault Links**: Click `[[Other Note]]` to open it in its native vault
+- **Embedded Content**: `![[Remote Note]]` displays the content inline with full markdown rendering
+- **Block & Heading References**: Use `#^blockid` or `#Heading Name` to embed specific sections
+- **Automatic Vault Discovery**: Scan a folder to find and connect to other vaults
+- **Bidirectional Linking**: Connect to vault B, and it automatically suggests vault A to B
+- **Custom Styling**: Set link text and embed background colors to match your theme
+- **Smart Indexing**: Fast file lookup across all connected vaults with caching
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## How It Works
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. **Index Generation**: Each vault generates an `index.json` file listing all its markdown files
+2. **Cross-Vault Lookup**: When you open a file, Vault Linker loads indices from all connected vaults
+3. **Link Processing**: Unresolved links are checked against the combined index
+4. **URI Activation**: Clicking a cross-vault link uses `obsidian://open?vault=...&file=...` to open the file
 
-## Adding your plugin to the community plugin list
+## Installation
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Caffa/vault-linker/releases)
+2. Place them in `<Vault>/.obsidian/plugins/vault-linker/`
+3. Reload Obsidian and enable the plugin in **Settings → Community plugins → Vault Linker**
 
-## How to use
+## Setup
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### 1. Configure Vault Connections
 
-## Manually installing the plugin
+Open **Settings → Vault Linker** and set your connections:
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+**Option A: Auto-Discover Multiple Vaults**
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+1. Set "Parent folder for vaults" to the folder containing your vaults
+2. Click **Scan for Vaults** to find all vaults in that folder
+3. Toggle on the vaults you want to connect
 
-## Funding URL
+**Option B: Add Vaults Individually**
 
-You can include funding URLs where people who use your plugin can financially support it.
+1. Click **Browse & Add** under "Add specific vault"
+2. Select a vault folder that has an `.obsidian` folder
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### 2. Customize Appearance (Optional)
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+- Set **Link color** for cross-vault links (default: green)
+- Set **Embed background color** for remote embeds (default: light purple)
+
+## Usage
+
+### Linking to Other Vaults
+
+Simply write a link as you normally would. If the file exists in another connected vault, it will be styled as a cross-vault link:
+
+```markdown
+Linking to Project A notes:
+See [[Project A/Research]] for more details.
 ```
 
-If you have multiple URLs, you can also do:
+When clicked, it opens the file in the "Project A" vault.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Embedding Content
+
+Embed full notes or sections from other vaults:
+
+```markdown
+// Embed entire remote note
+![[Project A/Research]]
+
+// Embed specific block (using block ID)
+![[Project A/Research#^my-block-id]]
+
+// Embed specific section (using heading)
+![[Project A/Research#Methodology]]
 ```
 
-## API Documentation
+The embedded content is rendered with full markdown support and clicking it opens the source file.
 
-See https://docs.obsidian.md
+### Refreshing Indices
 
-## ♥️ Support This Project
+If you create or rename many files in other vaults, manually refresh:
 
-If you find this little plugin useful, I'd truly appreciate your support. Please consider buying me a coffee on [Ko-fi](https://ko-fi.com/pamelawang_mwahacookie). Your contribution helps me keep making tools that make your creative life easier.
+- Use the command palette: **Refresh Cross-Vault Indices**
+- Or reload the current vault to trigger an index rebuild
+
+## Technical Details
+
+- **Desktop Only**: Requires file system access to read indices from other vaults
+- **Storage**: Each vault stores its index at `.obsidian/plugins/vault-linker/index.json`
+- **Performance**: Uses multiple caches (negative cache, lookup cache, normalization cache) for fast lookups
+- **Automatic Updates**: Indices regenerate on file create/delete/rename (debounced 5 seconds)
+
+## Requirements
+
+- Obsidian 1.7.7 or later
+- Desktop app (not mobile)
+- Other vaults must have Vault Linker installed and enabled
+
+## Limitations
+
+- Links to images in other vaults are not yet supported (use `obsidian://open` URIs manually)
+- Only markdown files are indexed
+- All vaults must be on the same local filesystem
+
+## Troubleshooting
+
+**Links aren't resolving to other vaults:**
+
+- Verify Vault Linker is installed and enabled in all target vaults
+- Check **Settings → Vault Linker → Vault Connections** to ensure vaults are connected (toggle = on)
+- Run **Refresh Cross-Vault Indices** from the command palette
+
+**Embed shows no content:**
+
+- Ensure the target file exists in a connected vault
+- Check console for errors (Developer Tools → Console)
+- Verify the file path is correct (case-sensitive on some systems)
+
+**Can't find other vaults:**
+
+- Set the correct parent folder path in settings
+- Click **Scan for Vaults** to rediscover
+- Use **Browse & Add** to manually add vault paths
+
+## Contributing
+
+This plugin is open source. Issues and pull requests are welcome on [GitHub](https://github.com/Caffa/vault-linker).
+
+## Support
+
+If you find Vault Linker useful, consider [supporting the project](https://ko-fi.com/pamelawang_mwahacookie).
+
+## License
+
+MIT
