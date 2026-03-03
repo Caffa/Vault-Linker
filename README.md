@@ -4,30 +4,42 @@
 
 Connect your Obsidian vaults together. Link to files and embed content from other vaults as if they were part of your current vault.
 
-## What It Does
+## The Problem
 
-Vault Linker lets you work with multiple Obsidian vaults as a unified knowledge base. When you create a link to a note that exists in another connected vault:
+If you keep your notes in more than one Obsidian vault, you've probably run into this: you write a link to a note in another vault, but it doesn't work. It just shows up as an unresolved link—useless.
 
-- **Clicking the link** opens that file in the other vault
-- **Embedding the content** `![[filename]]` displays the remote note inline
-- **Cross-vault links** are styled distinctly (customizable colors)
+**The issue:** Your vaults are separate. Links between them don't function because Obsidian only looks for files inside the current vault.
 
-## Features
+## What Vault Linker Does
 
-- **Seamless Cross-Vault Links**: Click `[[Other Note]]` to open it in its native vault
-- **Embedded Content**: `![[Remote Note]]` displays the content inline with full markdown rendering
-- **Block & Heading References**: Use `#^blockid` or `#Heading Name` to embed specific sections
-- **Automatic Vault Discovery**: Scan a folder to find and connect to other vaults
-- **Bidirectional Linking**: Connect to vault B, and it automatically suggests vault A to B
-- **Custom Styling**: Set link text and embed background colors to match your theme
-- **Smart Indexing**: Fast file lookup across all connected vaults with caching
+It lets you link to notes in your other vaults and actually make them work.
+
+- `[[Other Vault/Note]]` — click it, and that note opens in its own vault
+- `![[Other Vault/Note]]` — embed content from another vault right in your note
+- Also works with block references (`#^block-id`) and headings (`#Heading Name`)
+
+## Who This Is For
+
+- **Multiple vault users**: You split your notes into different vaults (diary, work, Zettelkasten, projects, etc.)
+- **Cross-referencers**: You want to reference notes from one vault in another without copy-pasting
+- **Separate but connected**: You like keeping vaults separate but still need them to link together
 
 ## How It Works
 
-1. **Index Generation**: Each vault generates an `index.json` file listing all its markdown files
-2. **Cross-Vault Lookup**: When you open a file, Vault Linker loads indices from all connected vaults
-3. **Link Processing**: Unresolved links are checked against the combined index
-4. **URI Activation**: Clicking a cross-vault link uses `obsidian://open?vault=...&file=...` to open the file
+Vault Linker indexes all files in your connected vaults (stored locally in `.obsidian/plugins/vault-linker/index.json`). When you open a note, it looks at any unresolved links—if the target exists in another vault, it marks that link as cross-vault. When you click, it uses the `obsidian://open` URI to launch the file in the correct vault.
+
+**Setup is simple:**
+
+1. Install Vault Linker in each vault you want to connect
+2. In settings, connect your vaults (scan a parent folder or add paths manually)
+3. Write normal links—the plugin handles the rest automatically
+
+## Technical Details
+
+- **Desktop Only**: Requires file system access to read indices from other vaults
+- **Storage**: Each vault stores its index at `.obsidian/plugins/vault-linker/index.json`
+- **Performance**: Uses multiple caches (negative cache, lookup cache, normalization cache) for fast lookups
+- **Automatic Updates**: Indices regenerate on file create/delete/rename (debounced 5 seconds)
 
 ## Installation
 
@@ -59,33 +71,32 @@ Open **Settings → Vault Linker** and set your connections:
 
 ## Usage
 
-### Linking to Other Vaults
+### Linking to Another Vault
 
-Simply write a link as you normally would. If the file exists in another connected vault, it will be styled as a cross-vault link:
+Just write a link normally. If the file exists in a connected vault, Vault Linker makes it work:
 
 ```markdown
-Linking to Project A notes:
 See [[Project A/Research]] for more details.
 ```
 
-When clicked, it opens the file in the "Project A" vault.
+Click the link—the note opens in the "Project A" vault.
 
 ### Embedding Content
 
-Embed full notes or sections from other vaults:
+Bring content from another vault into your note:
 
 ```markdown
-// Embed entire remote note
+// Entire note
 ![[Project A/Research]]
 
-// Embed specific block (using block ID)
-![[Project A/Research#^my-block-id]]
-
-// Embed specific section (using heading)
+// Specific section by heading
 ![[Project A/Research#Methodology]]
+
+// Specific block by ID
+![[Project A/Research#^my-block-id]]
 ```
 
-The embedded content is rendered with full markdown support and clicking it opens the source file.
+The embedded content renders with full markdown. Click it to open the source file in its vault.
 
 ### Refreshing Indices
 
